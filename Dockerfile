@@ -33,4 +33,4 @@ COPY trustchain/engine-template/src ./src
 RUN pip install --no-cache-dir -e .
 
 EXPOSE 9000
-CMD ["uvicorn", "src.engine:app", "--host", "0.0.0.0", "--port", "9000"]
+CMD ["uvicorn", "hello_world.engine:app", "--host", "0.0.0.0", "--port", "9000"]

@@ -11,9 +11,10 @@ from trustchain_contracts import Endpoint, ReconOutput, TechFingerprint
 
 class HelloWorld(EngineApp):
     # --- Single source of truth ---
-    # Path is resolved relative to this file's parent's parent (i.e. the
-    # engine root directory where engine.yaml lives).
-    engine_yaml_path = "../engine.yaml"
+    # Path is resolved relative to this file's parent (the package dir
+    # under src/). Engine root sits two levels up — pyproject.toml +
+    # engine.yaml live there.
+    engine_yaml_path = "../../engine.yaml"
 
     async def run(self, ctx: RunContext, config: dict):
         greeting = config.get("greeting", "hello")
@@ -60,5 +61,5 @@ def _placeholder_target():
     return TargetRef(id="t_placeholder", url="https://unknown.local", target_type="web")
 
 
-# FastAPI app for ``uvicorn src.engine:app``.
+# FastAPI app for ``uvicorn hello_world.engine:app``.
 app = HelloWorld().build_app()

@@ -8,3 +8,6 @@ __pycache__/
 .env
 build/
 dist/
+# DevHarness output dirs from local dev scripts (dev_run.py / dev_pipeline.py).
+.dev-run/
+.dev-pipeline/

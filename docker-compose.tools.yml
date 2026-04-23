@@ -1,0 +1,64 @@
+# Tool services for local engine development.
+#
+# Pulls pre-built images from GHCR (built and published from the
+# iSTARS-SMU/trustchain-tools public repo, sourced from the trustchain
+# monorepo). No local build, no monorepo access needed.
+#
+# Pin a specific version per tool via TAG=… or edit the line below; default
+# = `latest`. To pull every tool the lab supports, see
+# https://github.com/iSTARS-SMU/trustchain-tools (full umbrella compose).
+#
+# Usage:
+#   docker compose -f docker-compose.tools.yml up -d nmap-svc http-fetch-svc
+#   python dev_run.py
+#
+# Common subset shipped here: the 3 tools most engines need on day one
+# (nmap port scan / http_fetch / dig DNS). Uncomment more as you go.
+
+services:
+
+  nmap-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-nmap:${TAG:-latest}
+    hostname: nmap-svc
+    ports: ["9211:9211"]
+
+  http-fetch-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-http_fetch:${TAG:-latest}
+    hostname: http-fetch-svc
+    ports: ["9220:9220"]
+
+  dig-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-dig:${TAG:-latest}
+    hostname: dig-svc
+    ports: ["9207:9207"]
+
+  # ---- Uncomment the rest as your engine needs them. ----
+
+  # nuclei-svc:
+  #   image: ghcr.io/istars-smu/trustchain-tool-nuclei:${TAG:-latest}
+  #   hostname: nuclei-svc
+  #   ports: ["9214:9214"]
+  #
+  # feroxbuster-svc:
+  #   image: ghcr.io/istars-smu/trustchain-tool-feroxbuster:${TAG:-latest}
+  #   hostname: feroxbuster-svc
+  #   ports: ["9215:9215"]
+  #
+  # whatweb-svc:
+  #   image: ghcr.io/istars-smu/trustchain-tool-whatweb:${TAG:-latest}
+  #   hostname: whatweb-svc
+  #   ports: ["9212:9212"]
+  #
+  # wafw00f-svc:
+  #   image: ghcr.io/istars-smu/trustchain-tool-wafw00f:${TAG:-latest}
+  #   hostname: wafw00f-svc
+  #   ports: ["9213:9213"]
+  #
+  # exa-search-svc:
+  #   image: ghcr.io/istars-smu/trustchain-tool-exa-search:${TAG:-latest}
+  #   hostname: exa-search-svc
+  #   ports: ["9216:9216"]
+  #   environment:
+  #     # Required if your engine actually queries Exa. Leave unset to
+  #     # exercise the soft-fail path (engine sees success=false + clear error).
+  #     EXA_API_KEY: ${EXA_API_KEY:-}

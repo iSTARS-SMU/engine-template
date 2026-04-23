@@ -16,13 +16,17 @@ dependencies = [
 dev = [
     "pytest>=7.4",
     "pytest-asyncio>=0.23",
+    # DevHarness imports FastAPI at module load (it stands up a fake-core
+    # ASGI app); pulling [server] here so `pip install -e '.[dev]'` is
+    # enough for both unit tests AND `python dev_run.py`.
+    "trustchain-sdk[server]>=0.1,<0.2",
 ]
 server = [
     "trustchain-sdk[server]>=0.1,<0.2",
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"]
+packages = ["src/hello_world"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

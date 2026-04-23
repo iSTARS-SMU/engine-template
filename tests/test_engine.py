@@ -12,7 +12,7 @@ import pytest
 from trustchain_contracts import ReconOutput, TargetRef
 from trustchain_sdk.testing import MockContext
 
-from src.engine import HelloWorld
+from hello_world.engine import HelloWorld
 
 
 @pytest.mark.asyncio
