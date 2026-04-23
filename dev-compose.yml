@@ -1,0 +1,23 @@
+# Local dev-only: start THIS engine in isolation against a minimal set of
+# fake deps. No orchestrator, no real tool services — just the engine
+# listening on localhost:9000 for curl-based manual testing.
+#
+# Usage:
+#   docker compose -f dev-compose.yml up --build
+#
+# Then:
+#   curl -X POST localhost:9000/schema
+#   curl -X POST localhost:9000/invoke -H 'Content-Type: application/json' \
+#        -d @tests/fixtures/sample-envelope.json     # you'll need to create this
+
+version: "3.9"
+
+services:
+  hello-world:
+    build: .
+    ports:
+      - "9000:9000"
+    environment:
+      # Leave unset to disable Bearer check during dev (SDK checks only if set).
+      # ENGINE_SHARED_SECRET: "dev-secret"
+      PYTHONUNBUFFERED: "1"

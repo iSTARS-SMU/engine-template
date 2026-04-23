@@ -1,0 +1,58 @@
+# engine-template/engine.yaml
+#
+# Every engine ships a yaml like this. The core registry parses this into
+# EngineYamlSpec (trustchain_contracts.EngineYamlSpec). Field meanings:
+# see doc/spec.md §4.1 and doc/engine-contract.md §8.
+#
+# Fork this template for a new engine. Rename id/stage/image, review
+# capabilities, declare any required_tools and secret_requirements, then
+# fill in config_schema for user-facing options.
+
+id: hello-world
+version: 0.1.0
+stage: recon
+entry: http://hello-world-svc:9000
+# source_repo: https://github.com/your-org/your-engine     # student repo URL
+# image: ghcr.io/trustchain/hello-world:0.1.0              # prod image tag
+
+# --- Capabilities (drives UI gates and orchestrator policy) ---
+capabilities:
+  destructive: false       # true = may cause irreversible target changes
+  network_egress: true     # hits target or other external endpoints
+  uses_llm: false          # calls ctx.llm.chat(); requires llm_config in envelope
+  writes_artifacts: true   # calls ctx.save_artifact()
+risk_level: low            # low | medium | high  (high = UI twice-confirm)
+
+# --- Resources / timeout ---
+timeout_default: 300       # seconds; orchestrator sets deadline = now + this
+resource_profile:
+  memory_mb: 256
+  cpu: 0.25
+
+# --- Dependencies ---
+required_tools: []         # e.g. [nmap, feroxbuster]
+optional_tools: []
+secret_requirements: []
+# secret_requirements:
+#   - name: openai
+#     required: true
+#   - name: exa
+#     required: false
+artifact_types: []
+# artifact_types: [screenshot, raw_output]
+
+# --- I/O schema references ---
+# For stages with canonical DTOs in trustchain-contracts, reference the DTO.
+# Core validates both sides of the boundary.
+input_schema: {}
+output_schema:
+  $ref: "trustchain-contracts://recon/ReconOutput"
+
+# --- User-facing Task config (frontend auto-renders form from this) ---
+config_schema:
+  type: object
+  properties:
+    greeting:
+      type: string
+      default: "hello"
+      description: "Prefix for a demo log line."
