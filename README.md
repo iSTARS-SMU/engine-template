@@ -4,6 +4,13 @@ A fully-working reference implementation. Fork it to start a new engine; use
 it as a sanity source when you hit questions about "what should my engine
 look like?"
 
+> **Source of truth.** Mirrored to
+> [`iSTARS-SMU/engine-template`](https://github.com/iSTARS-SMU/engine-template)
+> for the student "Use this template" flow on GitHub. After editing here,
+> sync the mirror with `bash trustchain/scripts/sync-mirrors.sh template`.
+> Don't edit the org mirror directly — changes there will be overwritten on
+> next sync.
+
 ## What's here
 
 ```
