@@ -1,35 +1,36 @@
-# Dockerfile for engine-template / hello-world.
+# Standalone Dockerfile for the engine-template / hello-world engine.
 #
-# Build context MUST be the monorepo root — this Dockerfile copies trustchain-
-# contracts and trustchain-sdk from the same repo so the container doesn't
-# depend on those packages being on pip index (0.1-alpha hasn't published yet).
+# Build context = this directory (the engine root). No monorepo access needed —
+# trustchain-contracts + trustchain-sdk are shipped bundled under vendor/,
+# kept in sync with the monorepo source by scripts/sync-template-vendor.sh.
 #
-# From docker-compose.dev.yml this is wired as:
-#   build:
-#     context: .
-#     dockerfile: trustchain/engine-template/Dockerfile
+# Build:
+#   docker build -t hello-world .
 #
-# To build manually from the monorepo root:
-#   docker build -t trustchain/hello-world -f trustchain/engine-template/Dockerfile .
+# Or via docker compose:
+#   docker compose -f dev-compose.yml up --build
+#
+# When SDK / contracts contract updates, re-run the monorepo's
+# scripts/sync-template-vendor.sh + commit vendor/ diff + rebuild.
+# Until then this image pins whatever was in vendor/ at last sync.
 
 FROM python:3.11-slim
 
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 
-# --- Install platform packages from monorepo sources ---
-COPY trustchain/contracts /opt/contracts
-COPY trustchain/sdk/python /opt/sdk
-# Install trustchain-sdk with [server] extra so uvicorn is present for the
-# CMD below. Engines only need sdk[server] + contracts on top of python stdlib.
+# --- Install bundled trustchain platform packages ---
+COPY vendor/contracts /opt/contracts
+COPY vendor/sdk /opt/sdk
+# [server] extra includes uvicorn for the CMD below.
 RUN pip install --no-cache-dir /opt/contracts "/opt/sdk[server]"
 
 # --- Engine package ---
-COPY trustchain/engine-template/pyproject.toml ./
-COPY trustchain/engine-template/engine.yaml ./
-COPY trustchain/engine-template/src ./src
-# No --no-deps: pip resolves the engine's pypi deps (pytest-asyncio etc stay
-# in the dev extra; base deps are just trustchain-sdk+contracts already present).
+COPY pyproject.toml ./
+COPY engine.yaml ./
+COPY src ./src
+# pip resolves trustchain-sdk + trustchain-contracts from already-installed
+# versions above; no network / index required.
 RUN pip install --no-cache-dir -e .
 
 EXPOSE 9000

@@ -10,10 +10,18 @@ from trustchain_contracts import Endpoint, ReconOutput, TechFingerprint
 
 
 class HelloWorld(EngineApp):
-    # --- Single source of truth ---
-    # Path is resolved relative to this file's parent (the package dir
-    # under src/). Engine root sits two levels up — pyproject.toml +
-    # engine.yaml live there.
+    # --- Class-level defaults (fallback when engine.yaml is not on disk —
+    # e.g. when this engine is `pip install`ed as a wheel without the
+    # accompanying engine.yaml at the repo root). yaml STILL wins when
+    # found; these match the yaml exactly so detection of drift is clean.
+    engine_id = "hello-world"
+    version = "0.1.0"
+    stage = "recon"
+
+    # --- engine.yaml (source of truth when present) ---
+    # Resolved relative to THIS file (src/<pkg>/engine.py) → ../../engine.yaml
+    # at the engine repo root. Found in editable install + Docker; missing
+    # in wheel install → above class defaults take over.
     engine_yaml_path = "../../engine.yaml"
 
     async def run(self, ctx: RunContext, config: dict):

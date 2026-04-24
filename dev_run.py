@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from pathlib import Path
 
 from trustchain_contracts import TargetRef
@@ -40,6 +41,7 @@ from hello_world.engine import HelloWorld as EngineClass
 OUT_DIR = Path("./.dev-run")
 ARTIFACT_DIR = OUT_DIR / "artifacts"
 EVENTS_LOG = OUT_DIR / "events.jsonl"
+DOTENV_PATH = Path("./.env")
 
 
 # ---------- engine inputs ----------
@@ -73,18 +75,35 @@ TOOL_URLS: dict[str, str] = {
 }
 
 
+def _load_dotenv_if_present(path: Path) -> None:
+    if not path.exists():
+        return
+    for raw_line in path.read_text().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip("'").strip('"'))
+
+
 async def main() -> None:
+    _load_dotenv_if_present(DOTENV_PATH)
     OUT_DIR.mkdir(exist_ok=True)
 
     # If your engine declares uses_llm=true, set OPENAI_API_KEY in env or
     # pass openai_api_key=... here. Without it, ctx.llm.chat() raises
     # LLMUnavailable — useful for testing soft-fail paths.
+    secrets: dict[str, str] = {}
+    if openai_key := os.environ.get("OPENAI_API_KEY"):
+        secrets["openai"] = openai_key
+
     async with DevHarness(
         engine_app=EngineClass(),
         tool_urls=TOOL_URLS,
         authorized_scope=list(TARGET.authorized_scope),
         artifact_dir=ARTIFACT_DIR,
         events_path=EVENTS_LOG,
+        secrets=secrets,
     ) as harness:
         result = await harness.run_once(target=TARGET, config=CONFIG)
 

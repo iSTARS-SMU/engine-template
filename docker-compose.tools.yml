@@ -62,3 +62,13 @@ services:
   #     # Required if your engine actually queries Exa. Leave unset to
   #     # exercise the soft-fail path (engine sees success=false + clear error).
   #     EXA_API_KEY: ${EXA_API_KEY:-}
+  #
+  # nvd-search-svc:
+  #   image: ghcr.io/istars-smu/trustchain-tool-nvd-search:${TAG:-latest}
+  #   hostname: nvd-search-svc
+  #   ports: ["9217:9217"]
+  #   environment:
+  #     # OPTIONAL — without a key the rate limit is 5 req/30s. With one
+  #     # it's 50 req/30s (free signup at nvd.nist.gov/developers/request-an-api-key).
+  #     # Engines soft-fail on 429, so unset is tolerable for light dev use.
+  #     NVD_API_KEY: ${NVD_API_KEY:-}

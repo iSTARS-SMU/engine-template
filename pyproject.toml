@@ -30,3 +30,8 @@ packages = ["src/hello_world"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# Only collect this engine's own tests — vendor/ has its own test suites
+# for the bundled SDK + contracts, which pytest-all.sh runs from elsewhere.
+testpaths = ["tests"]
+# Also tell pytest not to recurse into vendor/ when resolving rootdir etc.
+norecursedirs = ["vendor", ".venv", ".dev-run", ".dev-pipeline"]
