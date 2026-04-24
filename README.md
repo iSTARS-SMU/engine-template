@@ -157,119 +157,213 @@ relevant block in `docker-compose.tools.yml` or pull from there.
 
 ## Run a multi-stage pipeline locally (`dev_pipeline.py`)
 
-`dev_run.py` only runs ONE engine. When you need to test stage chaining
-— e.g., `recon → weakness_gather → attack_plan` — use the bundled
-`dev_pipeline.py`. Same DevHarness under the hood, just chains each
+`dev_run.py` only runs ONE engine. When you need to test the full stage
+chain — `recon → weakness_gather → attack_plan → exploit → report` —
+use `dev_pipeline.py`. Same `DevHarness` under the hood; it threads each
 stage's output into the next stage's `ctx.upstream_outputs`.
 
-### Quickstart: full 3-stage `recon → weakness_gather → attack_plan`
+### Quickstart: full 5-stage pipeline, VSCode-first
 
-**Prerequisites**: you must be an outside-collaborator on each engine
-repo you want to clone (engine repos are private; images are public).
-If you don't have access, ask the admin to add you — see
-[engine-release-flow.md §3](../../doc/engine-release-flow.md) for the
-permission model.
+**Prerequisites**
+- Docker running (tool services run as containers)
+- Python 3.11+ with `venv` available
+- Outside-collaborator access on the 5 example engine repos (they're
+  private; ask the admin to add you — see
+  [engine-release-flow.md §3](../../doc/engine-release-flow.md))
+- Your SSH key added to GitHub (the clones below use `git@`)
 
+The commands assume a sibling-checkout layout where `engine-template/`
+and the 5 example engines sit as siblings under one parent directory.
+The workspace file (`engine-template.code-workspace`) expects this
+exact layout.
+
+**Step 1 — Clone all 6 repos as siblings**
 ```bash
-# 0. Sibling-checkout pattern. Assumes this engine-template lives at
-#    ~/pentest-dev/engine-template/. Everything else sits next to it.
-cd ~/pentest-dev
-
-# 1. Clone the three published engines (private repos, need org access).
+mkdir -p ~/pentest-dev && cd ~/pentest-dev
+git clone git@github.com:iSTARS-SMU/engine-template.git my-engine
 git clone git@github.com:iSTARS-SMU/recon-targetinfo.git
 git clone git@github.com:iSTARS-SMU/weakness-gather-exa.git
 git clone git@github.com:iSTARS-SMU/attack-plan-llm.git
-
-# 2. Install them editable into the template's venv (so you can edit
-#    code in any of them and see changes without reinstalling).
-cd engine-template
-source .venv/bin/activate       # venv from the Setup section above
-pip install -e ../recon-targetinfo \
-            -e ../weakness-gather-exa \
-            -e ../attack-plan-llm
-
-# 3. Bring up tool services. The 3-stage pipeline needs 5 tools:
-#      recon-targetinfo uses: nmap + http_fetch + dig (+ soft-fails on
-#                             nuclei/feroxbuster/whatweb/wafw00f — skip those)
-#      weakness-gather-exa uses: exa-search + nvd-search
-#    Uncomment `exa-search-svc` + `nvd-search-svc` blocks in
-#    docker-compose.tools.yml first, then:
-docker compose -f docker-compose.tools.yml up -d \
-    nmap-svc http-fetch-svc dig-svc exa-search-svc nvd-search-svc
-
-# 4. Set env. Copy template + fill in as needed.
-cp .env.example .env
-# Edit .env to set:
-#   TRUSTCHAIN_RECON_LLM_MODE=mock           (dev), or =real (with gpt-4o-mini)
-#   TRUSTCHAIN_WEAKNESS_GATHER_LLM_MODE=mock (dev), or =real
-#   OPENAI_API_KEY=sk-...                    (needed ONLY if any stage is real mode,
-#                                            OR if you add attack-plan-llm which has
-#                                            no mock path today — treat openai as required)
-#   EXA_API_KEY=...                          (optional; without it, exa soft-fails)
-#   NVD_API_KEY=...                          (optional; without it, 10× tighter NVD rate limit)
-
-# 5. Edit dev_pipeline.py — replace the default HelloWorld stage with:
-#      from recon_targetinfo.engine import ReconTargetInfo
-#      from weakness_gather_exa.engine import WeaknessGatherExa
-#      from attack_plan_llm.engine import AttackPlanLLMEngine
-#
-#      STAGES = [
-#          (ReconTargetInfo(),        {"nmap_mode": "basic"}),
-#          (WeaknessGatherExa(),      {"max_exa_queries": 3}),
-#          (AttackPlanLLMEngine(),    {"max_steps": 5}),
-#      ]
-#
-#    Also uncomment the 5 TOOL_URLS entries matching what you started
-#    in step 3 so the engines can actually reach their tools.
-
-# 6. Run.
-python dev_pipeline.py
+git clone git@github.com:iSTARS-SMU/exploit-autoeg.git
+git clone git@github.com:iSTARS-SMU/report-docx-pro.git
+ls   # should list: my-engine + 5 sibling repos
 ```
 
-**Tip (VSCode users)**: open `engine-template.code-workspace` (File →
-*Open Workspace from File...*, NOT *Open Folder*) instead of just
-opening the engine-template directory. The workspace file ships with
-the template and loads engine-template + the 3 sibling repos in one
-window, so breakpoints and "Go to definition" work across all of
-them. Sibling folders show as greyed-out "missing" until you clone
-them in step 1; refresh after cloning.
+`my-engine/` is YOUR engine — rename when you publish. The other 5 are
+upstream examples you install editable so `dev_pipeline.py` can import
+them AND so you can debug into their source.
 
-Expected output:
-- `pipeline run_id: r_...`
-- `succeeded: True`
-- `events: ~20-30` → `./.dev-pipeline/events.jsonl`
-- `artifacts: 4-6` → `./.dev-pipeline/artifacts/<run_id>/`
-- Per-stage outputs printed as JSON — the last one is an `AttackPlan`
-  with `steps: [...]` each describing one exploit objective
+**Step 2 — Create a venv in `my-engine/` and install everything editable**
+```bash
+cd my-engine
+python3.11 -m venv .venv
+source .venv/bin/activate
 
-### Alternative: shorter 2-stage pipeline
+# Platform packages (vendored; not on PyPI)
+pip install -e ./vendor/contracts -e './vendor/sdk[server,openai]'
 
-If `attack-plan-llm` is overkill for what you're testing:
+# Your engine
+pip install -e '.[dev]'
 
+# The 5 sibling engines — editable means edits in their repos take
+# effect immediately with no reinstall; great for cross-engine debugging.
+pip install -e ../recon-targetinfo \
+            -e ../weakness-gather-exa \
+            -e ../attack-plan-llm \
+            -e ../exploit-autoeg \
+            -e ../report-docx-pro
+```
+
+**Step 3 — Open the multi-root workspace in VSCode**
+
+In VSCode: **File → Open Workspace from File…** (NOT *Open Folder*), pick
+`~/pentest-dev/my-engine/engine-template.code-workspace`. The Explorer
+should show 6 roots:
+
+```
+engine-template (this engine)   ← your code
+recon-targetinfo (sibling)
+weakness-gather-exa (sibling)
+attack-plan-llm (sibling)
+exploit-autoeg (sibling)
+report-docx-pro (sibling)
+```
+
+Then pick the interpreter (`Python: Select Interpreter` in the command
+palette) and point at `my-engine/.venv/bin/python`. Breakpoints, "Go to
+definition", and hot-reload now work across all 6 roots.
+
+**Step 4 — Bring up tool services**
+```bash
+# From my-engine/ (where docker-compose.tools.yml lives)
+docker compose -f docker-compose.tools.yml up -d nmap-svc http-fetch-svc dig-svc
+docker ps --format "table {{.Names}}\t{{.Status}}" | grep -E "nmap|http-fetch|dig"
+```
+
+3 tools are the minimum for recon to produce real data. recon's
+enhancement tools (feroxbuster / whatweb / wafw00f / nuclei) and
+weakness_gather's external APIs (exa-search / nvd-search) are commented
+out in `docker-compose.tools.yml` by default; uncomment + restart when
+you need them. Without them, those engines soft-fail that specific call
+and continue — the pipeline still runs end-to-end.
+
+**Step 5 — Configure `.env`**
+```bash
+cp .env.example .env
+```
+
+Edit `.env` for a zero-cost dry run:
+```
+TRUSTCHAIN_RECON_LLM_MODE=mock
+TRUSTCHAIN_WEAKNESS_GATHER_LLM_MODE=mock
+OPENAI_API_KEY=sk-fake-walkthrough-key
+```
+
+The fake key satisfies `dev_pipeline.py`'s real-mode guard (attack_plan,
+exploit, and report each declare `uses_llm=true` and don't yet have
+mock-mode env toggles). The fake key triggers a 401 at OpenAI, the
+engine soft-fails that LLM call and continues with degraded output —
+so you still see the full pipeline shape without paying for real LLM.
+
+For real runs, set a real `OPENAI_API_KEY` and flip the first two modes
+to `real`. EXA / NVD keys are optional (soft-fail without them).
+
+**Step 6 — Wire the 5 engines into `dev_pipeline.py`**
+
+At the top of `dev_pipeline.py`, replace the `HelloWorld` import with:
+```python
+from recon_targetinfo.engine import ReconTargetinfoEngine
+from weakness_gather_exa.engine import WeaknessGatherExaEngine
+from attack_plan_llm.engine import AttackPlanLLMEngine
+from exploit_autoeg.engine import ExploitAutoEGEngine
+from report_docx_pro.engine import ReportDocxProEngine
+```
+
+Uncomment the 3 tool URLs you just brought up:
+```python
+TOOL_URLS: dict[str, str] = {
+    "nmap":       "http://localhost:9211",
+    "http_fetch": "http://localhost:9220",
+    "dig":        "http://localhost:9207",
+    # "nuclei":     "http://localhost:9214",
+    # ...
+}
+```
+
+Replace the `STAGES` list:
 ```python
 STAGES = [
-    (ReconTargetInfo(),   {"nmap_mode": "basic"}),
-    (WeaknessGatherExa(), {"max_exa_queries": 3}),
+    (ReconTargetinfoEngine(),   {"nmap_mode": "basic"}),
+    (WeaknessGatherExaEngine(), {"max_exa_queries": 3}),
+    (AttackPlanLLMEngine(),     {"max_steps": 5}),
+    (ExploitAutoEGEngine(),     {"safe_mode": True}),
+    (ReportDocxProEngine(),     {"use_llm_summary": False,
+                                 "report_title": "Demo Assessment"}),
 ]
 ```
 
+Two config notes:
+- `safe_mode=True` — exploit script is generated and saved as artifact,
+  but the sandbox skips actual execution. Keep this on until you have a
+  real target and know what you're launching at it.
+- `use_llm_summary=False` — skips the executive-summary LLM call; the
+  deterministic template fallback still produces a coherent summary.
+  Turn on once you have a real `OPENAI_API_KEY`.
+
+**Step 7 — Run**
+```bash
+python dev_pipeline.py
+```
+
+Expected output (about 30–90 seconds, mostly recon's real tool calls):
+
+- A `--- <stage> ---` JSON block for each of the 5 stages
+- `recon` returns a `ReconOutput` with a `tech_fingerprint` (mocked) and
+  2 raw-output artifacts (nmap + dig stdouts)
+- `weakness_gather` / `attack_plan` / `exploit` return empty lists with
+  `notes` explaining the soft-fail chain (exa/nvd unavailable →
+  no weaknesses → nothing to plan → nothing to exploit)
+- `report` returns a `report_artifact_ref` pointing to a ~40 KB `.docx`
+  with 8 sections (executive summary + recon + 4 pipeline sections +
+  appendix). `notes` includes
+  `report_input assembled from stage-keyed outputs (dev-harness mode)`,
+  meaning the report engine bootstrapped its own input from the 4 prior
+  stages' outputs (DevHarness doesn't pre-assemble like core does)
+
+Open the `.docx` to verify rendering:
+```bash
+open .dev-pipeline/artifacts/<run_id>/pentest-report-*.docx
+```
+
+### Alternative: shorter 2-stage run
+
+If you only need to test recon → weakness_gather interaction:
+```python
+STAGES = [
+    (ReconTargetinfoEngine(),   {"nmap_mode": "basic"}),
+    (WeaknessGatherExaEngine(), {"max_exa_queries": 3}),
+]
+```
+Both stages have proper mock modes, so you don't need a fake
+`OPENAI_API_KEY` — leave it blank.
+
 ### Alternative: single-stage dev with canned upstream
 
-If you're iterating on, say, `weakness-gather-exa` and don't want to
-burn 30 seconds on recon + all its tool calls every run:
+If you're iterating on just your own engine and don't want to re-run
+recon every time:
 
 1. Save one real `ReconOutput` to `fixtures/recon_output.json` (run the
-   2-stage once with save_intermediate=true, then copy from
+   2-stage pipeline once with `save_intermediate=true`, then copy from
    `.dev-pipeline/artifacts/<run_id>/`).
 2. In `dev_pipeline.py`:
    ```python
    CANNED_UPSTREAM = json.loads(Path("./fixtures/recon_output.json").read_text())
    STAGES = [
-       (WeaknessGatherExa(), {"max_exa_queries": 3}),  # recon stage skipped
+       (WeaknessGatherExaEngine(), {"max_exa_queries": 3}),  # recon skipped
    ]
    ```
-3. `python dev_pipeline.py` runs weakness-gather-exa with the canned
-   recon output pre-loaded. Seconds per iteration instead of minutes.
+3. `python dev_pipeline.py` runs only your stage with the canned input —
+   seconds per iteration, zero LLM cost from recon.
 
 Outputs always land in `./.dev-pipeline/` (parallel to `.dev-run/`).
 
