@@ -1,4 +1,4 @@
-// VSCode multi-root workspace for the 3-stage local pipeline.
+// VSCode multi-root workspace for the full 5-stage local pipeline.
 //
 // Open via: File → Open Workspace from File... → pick this file.
 // (Opening the engine-template folder directly only loads ONE root —
@@ -10,9 +10,11 @@
 // for the clone + pip install steps.
 {
     "folders": [
-        { "name": "engine-template (this engine)", "path": "." },
-        { "name": "recon-targetinfo (sibling)",    "path": "../recon-targetinfo" },
-        { "name": "weakness-gather-exa (sibling)", "path": "../weakness-gather-exa" },
-        { "name": "attack-plan-llm (sibling)",     "path": "../attack-plan-llm" }
+        { "name": "engine-template (this engine)",  "path": "." },
+        { "name": "recon-targetinfo (sibling)",     "path": "../recon-targetinfo" },
+        { "name": "weakness-gather-exa (sibling)",  "path": "../weakness-gather-exa" },
+        { "name": "attack-plan-llm (sibling)",      "path": "../attack-plan-llm" },
+        { "name": "exploit-autoeg (sibling)",       "path": "../exploit-autoeg" },
+        { "name": "report-docx-pro (sibling)",      "path": "../report-docx-pro" }
     ]
 }
