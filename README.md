@@ -381,27 +381,36 @@ known-vulnerable target — and you don't want to spend any LLM credits or
 configure a multi-stage `dev_pipeline.py` yourself — use the bundled
 juice-shop demo. It's a one-shot script that drives the full 5-stage
 pipeline against [OWASP Juice Shop](https://owasp.org/www-project-juice-shop/)
-with **real tools** (nmap, Playwright-rendered crawl, nuclei, NVD
-lookup, etc.), **mocked LLM** (12 curated responses shipped with the
-template), and **real exploit execution** (a SQL injection POST to
-`/rest/user/login` that actually returns a JWT for the admin user).
+with **real tools** (nmap, Playwright-rendered SPA crawl, whatweb,
+gau, linkfinder, dig, whois, wafw00f, NVD lookup, real Exa search),
+**mocked LLM** (12 curated responses shipped with the template), and
+**real exploit execution** (a SQL injection POST to `/rest/user/login`
+that actually returns a JWT for the admin user).
 
-Total cost: $0. Total time: ~70 s.
+Total cost: $0 (LLM is fully mocked from fixtures). Total time: ~2 min.
 
 ```bash
-# 1. juice-shop on :3001
-docker run --rm -p 3001:3000 bkimminich/juice-shop
-
-# 2. all 14 tool services (uses the bundle compose ≠ the parent's 3-tool default)
+# 1. start everything in one go — juice-shop + 12 tool services come up
+#    in the same compose project. The bundle excludes feroxbuster +
+#    nuclei because they sustain enough request load to OOM-kill
+#    juice-shop within ~30 s. recon-targetinfo soft-fails the missing
+#    tools and continues with the other 9.
 docker compose -f fixtures/juice-shop/docker-compose.tools-all.yml up -d
+
+# 2. confirm juice-shop is reachable on the host (it's also reachable
+#    from inside containers as juice-shop:3000)
+curl -s -o /dev/null -w "juice-shop on :3001 → %{http_code}\n" \
+    http://localhost:3001/rest/admin/application-version
+# expect: HTTP 200
 
 # 3. run
 python fixtures/juice-shop/demo_run.py
 ```
 
 Outputs land in `fixtures/juice-shop/.juice-shop-demo/` — `events.jsonl`
-plus all artifacts (raw tool outputs, generated exploit script, captured
-server response with the real JWT, the final `.docx` report).
+plus all artifacts (raw tool outputs from nmap/whatweb/dig/webstructure/
+linkfinder/etc., the generated SQLi exploit script, captured server
+response with the real JWT, the final `.docx` report).
 
 ### `dev_pipeline.py` vs `demo_run.py` — when to use which
 
