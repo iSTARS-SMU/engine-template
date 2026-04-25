@@ -32,6 +32,13 @@ engine-template/
 ├── vendor/                  # bundled trustchain-contracts + trustchain-sdk
 │   ├── contracts/           # (so Dockerfile + pip install work without a
 │   └── sdk/                 # PyPI index — 0.1-alpha not on PyPI yet)
+├── fixtures/
+│   └── juice-shop/          # curated zero-LLM-cost demo against OWASP Juice Shop
+│       ├── demo_run.py                  # entrypoint
+│       ├── docker-compose.tools-all.yml # bundle of all 14 tool services
+│       ├── README.md
+│       ├── *.json / *.txt               # 12 fixture LLM responses
+│       └── tools/                       # tool-level fixtures (exa-search.json)
 └── README.md
 ```
 
@@ -366,6 +373,50 @@ recon every time:
    seconds per iteration, zero LLM cost from recon.
 
 Outputs always land in `./.dev-pipeline/` (parallel to `.dev-run/`).
+
+## Run the curated demo (`fixtures/juice-shop/demo_run.py`)
+
+When you want to **see the platform work end-to-end** against a real
+known-vulnerable target — and you don't want to spend any LLM credits or
+configure a multi-stage `dev_pipeline.py` yourself — use the bundled
+juice-shop demo. It's a one-shot script that drives the full 5-stage
+pipeline against [OWASP Juice Shop](https://owasp.org/www-project-juice-shop/)
+with **real tools** (nmap, Playwright-rendered crawl, nuclei, NVD
+lookup, etc.), **mocked LLM** (12 curated responses shipped with the
+template), and **real exploit execution** (a SQL injection POST to
+`/rest/user/login` that actually returns a JWT for the admin user).
+
+Total cost: $0. Total time: ~70 s.
+
+```bash
+# 1. juice-shop on :3001
+docker run --rm -p 3001:3000 bkimminich/juice-shop
+
+# 2. all 14 tool services (uses the bundle compose ≠ the parent's 3-tool default)
+docker compose -f fixtures/juice-shop/docker-compose.tools-all.yml up -d
+
+# 3. run
+python fixtures/juice-shop/demo_run.py
+```
+
+Outputs land in `fixtures/juice-shop/.juice-shop-demo/` — `events.jsonl`
+plus all artifacts (raw tool outputs, generated exploit script, captured
+server response with the real JWT, the final `.docx` report).
+
+### `dev_pipeline.py` vs `demo_run.py` — when to use which
+
+|  | `dev_pipeline.py` | `demo_run.py` |
+|---|---|---|
+| Position | Top-level student daily driver | One-shot curated demo |
+| Target | You edit `TARGET` | Hardcoded juice-shop on :3001 |
+| `STAGES` | You edit | All 5 pre-wired |
+| LLM | Real (or generic mock for recon/weakness) | Curated juice-shop fixtures (12 responses, $0) |
+| `safe_mode` | Default `True` | `False` (real exploit against the demo target) |
+| Iteration | Edit, rerun, evolve | Idempotent — same input = same output |
+| Owner | The student | The platform |
+
+Think of `demo_run.py` as a **screenshot** of what `dev_pipeline.py`
+would look like if you locked in juice-shop and curated everything.
 
 ### ⚠️ LLM cost warning
 
