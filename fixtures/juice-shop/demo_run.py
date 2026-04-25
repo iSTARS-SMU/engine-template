@@ -67,23 +67,36 @@ EVENTS_LOG = OUT_DIR / "events.jsonl"
 
 
 # ---------- target ----------
+# Target URL used by ENGINES → TOOLS (tools run in containers, can resolve
+# the docker service name `juice-shop` over the compose-project network).
+# The host-side exploit subprocess hardcodes localhost:3001 in its fixture
+# script — that's separate; both URLs reach the same juice-shop instance.
 TARGET = TargetRef(
     id="t_juice",
-    url="http://localhost:3001/",
+    url="http://juice-shop:3000/",
     target_type="web",
-    authorized_scope=["localhost", "localhost:3001", "127.0.0.1", "127.0.0.1:3001"],
+    authorized_scope=[
+        "juice-shop", "juice-shop:3000",       # for in-container tool calls
+        "localhost", "localhost:3001",         # for host-side exploit subprocess
+        "127.0.0.1", "127.0.0.1:3001",
+    ],
 )
 
 
 # ---------- tool URLs (must match running container ports) ----------
+# 12 of 14 tool URLs — feroxbuster and nuclei are intentionally OMITTED
+# for the juice-shop demo. Both bombard the target with ~1000 requests
+# concurrently (ferox's wordlist scan, nuclei's full template suite),
+# which OOM-kills juice-shop's Node process within ~30 s. recon-targetinfo
+# soft-fails the missing tools and continues — recon coverage drops
+# slightly (no wordlist-discovered paths, no nuclei tech-detect templates)
+# but the pipeline runs end-to-end without crashing the target.
 TOOL_URLS: dict[str, str] = {
     "nmap":        "http://localhost:9211",
     "http_fetch":  "http://localhost:9220",
     "dig":         "http://localhost:9207",
     "whatweb":     "http://localhost:9212",
     "wafw00f":     "http://localhost:9213",
-    "nuclei":      "http://localhost:9214",
-    "feroxbuster": "http://localhost:9215",
     "exa-search":  "http://localhost:9216",
     "nvd-search":  "http://localhost:9217",
     "webstructure":"http://localhost:9218",

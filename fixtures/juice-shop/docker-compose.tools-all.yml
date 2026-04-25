@@ -15,6 +15,22 @@ name: juice-shop
 
 services:
 
+  # The target itself, in the same compose project so all tool containers
+  # can reach it via the service hostname `juice-shop` (port 3000 inside
+  # the network). Host can also reach it at localhost:3001 (the published
+  # port). The exploit script — which runs on the host as a subprocess —
+  # uses localhost:3001; the recon tools (in containers) use juice-shop:3000.
+  juice-shop:
+    image: bkimminich/juice-shop
+    hostname: juice-shop
+    ports: ["3001:3000"]
+    # juice-shop is single-node JS. feroxbuster's parallel HEAD spam +
+    # nuclei's template scan sustain enough load to OOM Node's default
+    # ~1.5 GB heap inside the container. Bump V8 heap to 4 GB so the
+    # demo survives all 11 concurrent recon tools without crashing.
+    environment:
+      NODE_OPTIONS: "--max-old-space-size=4096"
+
   nmap-svc:
     image: ghcr.io/istars-smu/trustchain-tool-nmap:${TAG:-latest}
     hostname: nmap-svc
