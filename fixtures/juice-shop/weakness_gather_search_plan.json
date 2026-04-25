@@ -1,0 +1,8 @@
+[
+  "OWASP juice shop SQL injection /rest/user/login authentication bypass",
+  "OWASP juice shop reflected XSS search query parameter",
+  "OWASP juice shop IDOR basket id tampering",
+  "OWASP juice shop broken access control score-board administrative",
+  "express.js prototype pollution CVE 2023",
+  "angular cross-site scripting bypass templates"
+]

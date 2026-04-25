@@ -40,6 +40,7 @@ from ._errors import (
 )
 from .context import RunContext
 from .engine import EngineApp
+from .fixture_llm import install_fixture_hook, install_fixture_hook_from_env
 from .llm import LLMClient, LLMResult
 from .secrets import SecretsProxy
 

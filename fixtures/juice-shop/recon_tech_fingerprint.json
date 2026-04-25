@@ -1,0 +1,12 @@
+{
+  "framework": "Express.js",
+  "server": "Node.js HTTP",
+  "cms": null,
+  "language": "TypeScript/JavaScript",
+  "versions": {
+    "express": "4.17.x",
+    "angular": "15.x",
+    "nodejs": "18.x",
+    "juice-shop": "15.x"
+  }
+}

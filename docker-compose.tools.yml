@@ -72,3 +72,41 @@ services:
   #     # it's 50 req/30s (free signup at nvd.nist.gov/developers/request-an-api-key).
   #     # Engines soft-fail on 429, so unset is tolerable for light dev use.
   #     NVD_API_KEY: ${NVD_API_KEY:-}
+  #
+  # webstructure-svc:
+  #   image: ghcr.io/istars-smu/trustchain-tool-webstructure:${TAG:-latest}
+  #   hostname: webstructure-svc
+  #   ports: ["9218:9218"]
+  #   # HTML structure discovery (recursive same-origin crawl, forms,
+  #   # API-doc hints). v0.1 has no Playwright — SPA / JS-rendered pages
+  #   # deferred. Used by recon engines to find endpoints feroxbuster
+  #   # misses (form actions, links that aren't in any wordlist).
+  #
+  # whois-svc:
+  #   image: ghcr.io/istars-smu/trustchain-tool-whois:${TAG:-latest}
+  #   hostname: whois-svc
+  #   ports: ["9208:9208"]
+  #   # Domain registration metadata (registrar / creation / expiry /
+  #   # nameservers). Useful in recon for target-age + ownership signal.
+  #
+  # gau-svc:
+  #   image: ghcr.io/istars-smu/trustchain-tool-gau:${TAG:-latest}
+  #   hostname: gau-svc
+  #   ports: ["9103:9103"]
+  #   # Historical URL scraper (AlienVault OTX + Wayback + CommonCrawl).
+  #   # Surfaces endpoints that aren't in the current link graph but
+  #   # existed in past versions of the site.
+  #
+  # waybackurls-svc:
+  #   image: ghcr.io/istars-smu/trustchain-tool-waybackurls:${TAG:-latest}
+  #   hostname: waybackurls-svc
+  #   ports: ["9104:9104"]
+  #   # Wayback Machine CDX index URL finder. Narrower than gau
+  #   # (archive.org only) but faster; complementary signal.
+  #
+  # linkfinder-svc:
+  #   image: ghcr.io/istars-smu/trustchain-tool-linkfinder:${TAG:-latest}
+  #   hostname: linkfinder-svc
+  #   ports: ["9105:9105"]
+  #   # Extracts URL / endpoint strings from JavaScript source. Catches
+  #   # SPA endpoints that only appear as string literals in bundled JS.

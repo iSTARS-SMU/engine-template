@@ -1,0 +1,4 @@
+{
+  "selected_weakness_ids": ["w_juice_sqli_login"],
+  "rationale": "Of the 6 weakness candidates, w_juice_sqli_login is the highest-leverage target: it is the only one (a) reproducible without prior credentials, (b) immediately impactful (admin authentication bypass → JWT leak), and (c) within safe-mode-compatible HTTP request space (single-request POC, no destructive side effects on a fresh juice-shop instance). Other candidates: w_juice_xss_search needs a victim browser; w_juice_idor_basket requires a logged-in user1 token to demonstrate access to user2 — too many prerequisites for a one-shot demo; w_juice_admin_score is a UI-only finding (browse vs API exploit); w_juice_jwt_alg requires extracting the secret from the bundle first, two-step; w_express_redirect (CVE-2024-29041) does not match the deployed juice-shop's express version path."
+}

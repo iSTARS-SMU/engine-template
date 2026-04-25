@@ -1,0 +1,32 @@
+```python
+def test_trigger_sqli_login_bypass():
+    """Validate that the PTF builds a request matching the reference shape.
+    Rule-based asserts — no network required."""
+    req = trigger_sqli_login_bypass("http://example.test")
+
+    # (1) URL path match — must hit /rest/user/login
+    assert req["url"].endswith("/rest/user/login"), (
+        f"PTF url should end with /rest/user/login, got {req['url']!r}"
+    )
+
+    # (2) HTTP body match — must be JSON with email + password keys
+    import json
+    body = json.loads(req["body"])
+    assert "email" in body, "body missing email key"
+    assert "password" in body, "body missing password key"
+    # email must contain a SQL-comment marker (otherwise the bypass fails)
+    assert "--" in body["email"], (
+        f"email payload missing SQL comment marker, got {body['email']!r}"
+    )
+
+    # (3) HTTP method + headers
+    assert req["method"] == "POST", f"expected POST, got {req['method']}"
+    assert req["headers"].get("Content-Type") == "application/json", (
+        f"expected Content-Type application/json, got {req['headers']}"
+    )
+
+    print("Test passed.")
+
+
+test_trigger_sqli_login_bypass()
+```

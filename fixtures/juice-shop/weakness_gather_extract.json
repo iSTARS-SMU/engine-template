@@ -1,0 +1,74 @@
+[
+  {
+    "id": "w_juice_sqli_login",
+    "type": "sql_injection",
+    "cve": null,
+    "severity_hint": "critical",
+    "description": "OWASP Juice Shop has a SQL injection vulnerability in the /rest/user/login endpoint via the email parameter. Crafted payloads using SQL comments (--) bypass authentication and grant admin access without a valid password.",
+    "source": "juice-shop-docs",
+    "evidence_snippet": "POST /rest/user/login {\"email\":\"' OR true--\",\"password\":\"x\"} returns 200 with valid JWT for admin@juice-sh.op",
+    "cvss_v3": 9.8,
+    "references": [
+      "https://pwning.owasp-juice.shop/companion-guide/latest/part2/injection.html"
+    ]
+  },
+  {
+    "id": "w_juice_xss_search",
+    "type": "xss_reflected",
+    "cve": null,
+    "severity_hint": "medium",
+    "description": "Reflected XSS via /#/search?q=<iframe src=javascript:alert(`xss`)> in the search bar; payload renders unsanitized in result list.",
+    "source": "juice-shop-docs",
+    "evidence_snippet": "GET /#/search?q=<iframe src='javascript:alert(1)'> triggers script execution",
+    "cvss_v3": 6.1,
+    "references": [
+      "https://pwning.owasp-juice.shop/companion-guide/latest/part2/xss.html"
+    ]
+  },
+  {
+    "id": "w_juice_idor_basket",
+    "type": "idor",
+    "cve": null,
+    "severity_hint": "high",
+    "description": "BasketId path parameter is not validated against the authenticated session — any user can read another user's basket by tampering the id.",
+    "source": "juice-shop-docs",
+    "evidence_snippet": "GET /rest/basket/2 with user-1 JWT returns user-2 basket contents",
+    "cvss_v3": 7.5,
+    "references": [
+      "https://pwning.owasp-juice.shop/companion-guide/latest/part2/broken-access-control.html"
+    ]
+  },
+  {
+    "id": "w_juice_admin_score",
+    "type": "broken_access_control",
+    "cve": null,
+    "severity_hint": "high",
+    "description": "/score-board route is hidden in the UI but accessible by direct URL without authentication; reveals all challenge details + admin diagnostic data.",
+    "source": "juice-shop-docs",
+    "evidence_snippet": "Direct GET /#/score-board renders without any auth check",
+    "cvss_v3": 7.5,
+    "references": []
+  },
+  {
+    "id": "w_juice_jwt_alg",
+    "type": "weak_jwt",
+    "cve": null,
+    "severity_hint": "high",
+    "description": "JWT signed with HS256 + a leaked shared secret embedded in the JS bundle allows arbitrary token forgery (impersonation, role escalation).",
+    "source": "juice-shop-docs",
+    "evidence_snippet": "main.js bundle contains literal jwtSecret value",
+    "cvss_v3": 8.1,
+    "references": []
+  },
+  {
+    "id": "w_express_redirect",
+    "type": "open_redirect",
+    "cve": "CVE-2024-29041",
+    "severity_hint": "medium",
+    "description": "Express.js sendFile path traversal under specific configurations; affects 4.x prior to 4.19.2.",
+    "source": "nvd",
+    "evidence_snippet": null,
+    "cvss_v3": 6.1,
+    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2024-29041"]
+  }
+]

@@ -1,0 +1,27 @@
+This penetration assessment of OWASP Juice Shop (deployed at
+http://localhost:3001) identified one critical-severity vulnerability
+that was successfully exploited end-to-end: a SQL injection
+authentication bypass on the /rest/user/login endpoint that allowed
+the assessor to obtain a valid administrative JWT without knowing any
+password. The bypass relies on a SQL comment marker placed in the
+email field, short-circuiting the password check executed by the
+back-end login query. Reconnaissance discovered approximately 120
+unique endpoints across the application's REST API, single-page
+Angular front-end, and data-erasure / FTP debug surfaces;
+weakness-gathering surfaced six distinct candidate vulnerabilities
+spanning injection, cross-site scripting, broken access control, and
+weak JWT signing.
+
+Recommended next steps in priority order: (1) immediately rewrite the
+login query to use a parameterized prepared statement instead of
+string concatenation — the current implementation appends user input
+directly to the SQL fragment, which is the root cause of the
+exploited bypass; (2) follow the SQL fix with a code-review pass
+across the remaining REST endpoints to catch similar patterns
+upstream of the data layer; (3) re-run this assessment after
+remediation to confirm the bypass is closed and to validate that the
+five other identified weaknesses (XSS in product search, IDOR on
+basket id, missing access control on /score-board, weak JWT signing
+secret, and the express-redirect CVE candidate) have been triaged.
+Detailed reproduction steps and the full exploit payload appear in
+the Exploit Results and Appendix sections of this report.

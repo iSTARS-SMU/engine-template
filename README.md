@@ -196,7 +196,7 @@ them AND so you can debug into their source.
 **Step 2 — Create a venv in `my-engine/` and install everything editable**
 ```bash
 cd my-engine
-python3.11 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 
 # Platform packages (vendored; not on PyPI)

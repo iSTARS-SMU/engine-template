@@ -1,0 +1,93 @@
+# All 14 trustchain tool services for the juice-shop demo.
+#
+# This is the "demo bundle" — every tool the 5 example engines might
+# call, on the canonical port. The minimal subset for normal student
+# work lives in ../docker-compose.tools.yml (3 tools default).
+#
+# Usage from engine-template root:
+#   docker compose -f fixtures/juice-shop/docker-compose.tools-all.yml up -d
+#   docker ps --format '{{.Names}}\t{{.Status}}' | grep juice-shop
+#
+# All images come from the public iSTARS-SMU/trustchain-tools umbrella.
+# No build, no monorepo access needed.
+
+name: juice-shop
+
+services:
+
+  nmap-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-nmap:${TAG:-latest}
+    hostname: nmap-svc
+    ports: ["9211:9211"]
+
+  http-fetch-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-http_fetch:${TAG:-latest}
+    hostname: http-fetch-svc
+    ports: ["9220:9220"]
+
+  dig-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-dig:${TAG:-latest}
+    hostname: dig-svc
+    ports: ["9207:9207"]
+
+  whatweb-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-whatweb:${TAG:-latest}
+    hostname: whatweb-svc
+    ports: ["9212:9212"]
+
+  wafw00f-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-wafw00f:${TAG:-latest}
+    hostname: wafw00f-svc
+    ports: ["9213:9213"]
+
+  nuclei-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-nuclei:${TAG:-latest}
+    hostname: nuclei-svc
+    ports: ["9214:9214"]
+
+  feroxbuster-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-feroxbuster:${TAG:-latest}
+    hostname: feroxbuster-svc
+    ports: ["9215:9215"]
+
+  exa-search-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-exa-search:${TAG:-latest}
+    hostname: exa-search-svc
+    ports: ["9216:9216"]
+    environment:
+      EXA_API_KEY: ${EXA_API_KEY:-}     # optional; soft-fails without
+
+  nvd-search-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-nvd-search:${TAG:-latest}
+    hostname: nvd-search-svc
+    ports: ["9217:9217"]
+    environment:
+      NVD_API_KEY: ${NVD_API_KEY:-}     # optional; tighter rate limit without
+
+  webstructure-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-webstructure:${TAG:-latest}
+    hostname: webstructure-svc
+    ports: ["9218:9218"]
+    # v0.1.1 includes Chromium for Playwright SPA rendering — needed
+    # for juice-shop (Angular SPA). For static targets, the default
+    # use_playwright=true can be turned off in the engine config.
+
+  whois-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-whois:${TAG:-latest}
+    hostname: whois-svc
+    ports: ["9208:9208"]
+
+  gau-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-gau:${TAG:-latest}
+    hostname: gau-svc
+    ports: ["9103:9103"]
+
+  waybackurls-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-waybackurls:${TAG:-latest}
+    hostname: waybackurls-svc
+    ports: ["9104:9104"]
+
+  linkfinder-svc:
+    image: ghcr.io/istars-smu/trustchain-tool-linkfinder:${TAG:-latest}
+    hostname: linkfinder-svc
+    ports: ["9105:9105"]

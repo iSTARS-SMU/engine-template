@@ -187,7 +187,19 @@ class EngineApp:
 
         Lazy FastAPI import so `import trustchain_sdk` stays fast for test-only
         workflows that never need the server.
+
+        Async-invoke flow (spec §3.4): when the envelope carries a
+        `callbacks.completion_url`, /invoke kicks off `self.invoke(...)` as
+        a background asyncio.Task and returns 202 immediately. The task
+        POSTs the final EngineResult to completion_url when done. This lets
+        long-running engines outlive the original HTTP connection.
+
+        Backward-compat path: if completion_url is absent (older
+        orchestrator), /invoke runs `invoke()` inline and returns the
+        EngineResult on the response — same as 0.1-alpha.
         """
+        import asyncio
+
         from fastapi import Depends, FastAPI, Header, HTTPException
         from fastapi.responses import JSONResponse
 
@@ -204,14 +216,35 @@ class EngineApp:
 
         @app.post("/invoke", dependencies=[Depends(_check_auth)])
         async def invoke_endpoint(envelope: RunContextEnvelope):
-            result = await self.invoke(envelope)
-            if result.status != EngineStatus.FAILED:
-                http_status = 200
-            else:
-                http_status = _http_status_for_error(result.error_code)
+            completion_url = (
+                envelope.callbacks.completion_url
+                if envelope.callbacks is not None
+                else None
+            )
+            if not completion_url:
+                # Legacy synchronous path — keeps old orchestrators working.
+                result = await self.invoke(envelope)
+                if result.status != EngineStatus.FAILED:
+                    http_status = 200
+                else:
+                    http_status = _http_status_for_error(result.error_code)
+                return JSONResponse(
+                    content=result.model_dump(mode="json"),
+                    status_code=http_status,
+                )
+
+            # Async-job path: kick off the work, return 202 right away.
+            asyncio.create_task(
+                self._run_and_post_completion(
+                    envelope, completion_url, envelope.callbacks.token
+                )
+            )
             return JSONResponse(
-                content=result.model_dump(mode="json"),
-                status_code=http_status,
+                content={
+                    "status": "accepted",
+                    "stage_attempt_id": envelope.stage_attempt_id,
+                },
+                status_code=202,
             )
 
         @app.get("/schema")
@@ -223,6 +256,79 @@ class EngineApp:
             return {"status": "healthy"}
 
         return app
+
+    async def _run_and_post_completion(
+        self,
+        envelope: RunContextEnvelope,
+        completion_url: str,
+        token: str,
+    ) -> None:
+        """Background-task entry point for the async-invoke flow. Runs
+        engine.run() via the same `invoke()` method as the sync path, then
+        POSTs the EngineResult back to the orchestrator's completion endpoint.
+
+        Errors from the work itself are already converted to a structured
+        EngineResult(status=failed) by `invoke()`. Errors from the *POST
+        itself* (network blip / orchestrator restart) are logged but cannot
+        be retried — orchestrator's wait will timeout and surface a TIMEOUT
+        error code, which is the right user-visible outcome.
+        """
+        try:
+            result = await self.invoke(envelope)
+        except Exception as exc:
+            # invoke() catches everything and returns a structured failure;
+            # this branch is defense-in-depth.
+            logger.error(
+                "engine %s background invoke crashed: %s\n%s",
+                self.engine_id, exc, traceback.format_exc(),
+            )
+            result = _failed_result(
+                envelope.stage_attempt_id,
+                ErrorCode.INTERNAL_ERROR,
+                f"background invoke crashed: {exc}",
+                retryable=True,
+                partial_artifacts=[],
+            )
+
+        # Use the SDK-wide test HTTP client when one is installed (thin-slice
+        # tests route core's URLs through ASGI in-process). Production: build
+        # a fresh, short-lived client.
+        from .context import _test_http_client
+
+        try:
+            if _test_http_client is not None:
+                client = _test_http_client
+                owned = False
+            else:
+                client = httpx.AsyncClient(timeout=30.0)
+                owned = True
+            try:
+                resp = await client.post(
+                    completion_url,
+                    json=result.model_dump(mode="json"),
+                    headers={"X-Callback-Token": token},
+                )
+            finally:
+                if owned:
+                    await client.aclose()
+            if resp.status_code == 410:
+                # Orchestrator gave up (timeout). Drop the result silently —
+                # nothing useful to do at this point.
+                logger.warning(
+                    "engine %s completion 410 Gone for sa=%s — orchestrator "
+                    "no longer awaiting",
+                    self.engine_id, envelope.stage_attempt_id,
+                )
+            elif resp.status_code >= 400:
+                logger.error(
+                    "engine %s completion POST failed (status=%s): %s",
+                    self.engine_id, resp.status_code, resp.text[:300],
+                )
+        except httpx.HTTPError as exc:
+            logger.error(
+                "engine %s completion POST network error: %s",
+                self.engine_id, exc,
+            )
 
     # --- Core /invoke plumbing ---
 

