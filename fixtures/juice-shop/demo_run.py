@@ -47,7 +47,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from trustchain_contracts import LLMConfig, TargetRef
+from trustchain_contracts import TargetRef
 from trustchain_sdk import install_fixture_hook
 from trustchain_sdk.testing import DevHarness
 
@@ -103,8 +103,23 @@ STAGES = [
         "webstructure_max_depth": 2,
         # Playwright on (default) so juice-shop's Angular routes get rendered.
     }),
-    (WeaknessGatherExaEngine(), {"max_exa_queries": 3}),
-    (AttackPlanLLMEngine(), {"max_steps": 4}),
+    (WeaknessGatherExaEngine(), {
+        "max_exa_queries": 3,
+        # Bypass weakness-gather-exa v0.1.0 bug: default sends
+        # cvss_v3_severity="HIGH,CRITICAL" but the nvd-search tool API
+        # only accepts a single literal value (LOW/MEDIUM/HIGH/CRITICAL).
+        # Empty string → engine sends None → NVD returns all severities.
+        # Engine-side fix tracked separately (will land in v0.2.0).
+        "nvd_severity_filter": "",
+    }),
+    (AttackPlanLLMEngine(), {
+        "max_steps": 4,
+        # AttackPlanLLM defaults force_safe_mode=True for safety; demo
+        # explicitly opts out so our fixture's safe_mode=false claim
+        # propagates through to the exploit stage. Demo is against a
+        # local juice-shop on a known-vulnerable port — safe.
+        "force_safe_mode": False,
+    }),
     (ExploitAutoEGEngine(), {
         "safe_mode": False,                  # REAL EXECUTION
         "budget_usd_per_step": 5.00,         # generous (fixture costs $0 anyway)
@@ -154,7 +169,7 @@ async def main() -> int:
         artifact_dir=ARTIFACT_DIR,
         events_path=EVENTS_LOG,
         secrets=secrets,
-        llm_config=LLMConfig(provider="openai", default_model="gpt-4o-mini"),
+        llm_default_model="gpt-4o-mini",
     ) as harness:
         result = await harness.run_pipeline(stages=STAGES, target=TARGET)
     elapsed = (datetime.now(timezone.utc) - started).total_seconds()

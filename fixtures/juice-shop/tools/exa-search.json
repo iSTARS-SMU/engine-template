@@ -1,0 +1,52 @@
+{
+  "query": "juice-shop weakness search (curated)",
+  "results": [
+    {
+      "title": "Injection — OWASP Juice Shop Companion Guide",
+      "url": "https://pwning.owasp-juice.shop/companion-guide/latest/part2/injection.html",
+      "text": "OWASP Juice Shop's /rest/user/login endpoint is vulnerable to SQL injection via the email parameter. Crafted payloads using the SQL comment marker (--) terminate the password check early and return a valid session JWT for any user, including admin@juice-sh.op. Example payload: {\"email\":\"' OR true--\",\"password\":\"x\"}. The same vulnerability allows enumerating user accounts via UNION SELECT.",
+      "score": 0.95,
+      "publishedDate": "2024-01-12"
+    },
+    {
+      "title": "XSS Tier 1: Reflected XSS in product search — Juice Shop",
+      "url": "https://pwning.owasp-juice.shop/companion-guide/latest/part2/xss.html#reflected-xss-tier-1",
+      "text": "Search functionality at /#/search?q= reflects user input unsanitized in the result list. Payload <iframe src=javascript:alert(`xss`)> or <img src=x onerror=alert(1)> renders inline. Demonstrates classic reflected XSS without bypassing any filter.",
+      "score": 0.91,
+      "publishedDate": "2024-02-03"
+    },
+    {
+      "title": "Broken Access Control: Basket ID tampering — Juice Shop",
+      "url": "https://pwning.owasp-juice.shop/companion-guide/latest/part2/broken-access-control.html#basket-id-tampering",
+      "text": "The /rest/basket/{id} endpoint accepts any numeric basketId without validating against the authenticated session. With a valid JWT for user 1, GET /rest/basket/2 returns user 2's basket contents (IDOR). The challenge requires tampering bid in URL or in PATCH bodies.",
+      "score": 0.88,
+      "publishedDate": "2024-02-15"
+    },
+    {
+      "title": "Score Board access without admin — Juice Shop",
+      "url": "https://pwning.owasp-juice.shop/companion-guide/latest/part2/broken-access-control.html#score-board",
+      "text": "/score-board route is hidden in the UI but is accessible by direct URL navigation; no auth check is enforced. Reveals all challenge metadata + admin diagnostics (broken access control, OWASP A01:2021).",
+      "score": 0.83,
+      "publishedDate": "2024-01-20"
+    },
+    {
+      "title": "Weak JWT signing in Juice Shop — secret in JS bundle",
+      "url": "https://pwning.owasp-juice.shop/companion-guide/latest/part2/sensitive-data-exposure.html#jwt",
+      "text": "Juice Shop signs JWTs with HS256 + a hardcoded shared secret literal embedded in main.<hash>.js. Extracting it allows arbitrary token forgery (impersonation, role escalation). CWE-321: Use of Hard-coded Cryptographic Key.",
+      "score": 0.79,
+      "publishedDate": "2024-03-08"
+    },
+    {
+      "title": "CVE-2024-29041 Express.js path traversal in sendFile",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-29041",
+      "text": "Express.js versions prior to 4.19.2 have a path-traversal flaw under specific sendFile() configurations. May affect Juice Shop if the underlying express version matches and a static-file route is exposed.",
+      "score": 0.62,
+      "publishedDate": "2024-03-25"
+    }
+  ],
+  "num_results_requested": 5,
+  "num_results_returned": 6,
+  "duration_ms": 12,
+  "success": true,
+  "error": null
+}
